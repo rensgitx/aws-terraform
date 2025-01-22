@@ -205,11 +205,6 @@ resource "aws_cloudwatch_metric_alarm" "tile_tracker_low_invocation" {
   dimensions = {
     FunctionName = aws_lambda_function.tile_tracker_lambda_function.id
   }
-/*
-  alarm_actions = [
-    aws_sns_topic.tile_tracker_notify_topic.arn
-  ]
-*/
 }
 
 resource "aws_cloudwatch_metric_alarm" "tile_tracker_high_invocation" {
@@ -226,4 +221,21 @@ resource "aws_cloudwatch_metric_alarm" "tile_tracker_high_invocation" {
   dimensions = {
     FunctionName = aws_lambda_function.tile_tracker_lambda_function.id
   }
+}
+
+# Composite alarm - triggers SNS when breached
+resource "aws_cloudwatch_composite_alarm" "tile_tracker_invocation_anomaly" {
+  alarm_name        = "tile-tracker-alarm-invocation-anomaly-${var.env}"
+  alarm_description = "Invocation rate anomaly for tile-tracker lambda in the last 1 hour."
+  alarm_rule        = <<-RULE
+    ALARM(${aws_cloudwatch_metric_alarm.tile_tracker_low_invocation.alarm_name}) OR 
+    ALARM(${aws_cloudwatch_metric_alarm.tile_tracker_high_invocation.alarm_name})
+  RULE
+
+  actions_enabled     = true
+  alarm_actions = [
+    aws_sns_topic.tile_tracker_notify_topic.arn
+  ]
+  insufficient_data_actions = []
+  ok_actions          = []
 }
