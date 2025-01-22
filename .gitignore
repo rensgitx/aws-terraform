@@ -1,0 +1,8 @@
+.env
+*.local
+*terraform*
+!terraform.tf
+envs/**/backend.tf
+envs/dev/dev.tfvars
+envs/pro/pro.tfvars
+envs/**/output/
