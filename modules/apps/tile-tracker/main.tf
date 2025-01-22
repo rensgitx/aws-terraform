@@ -165,22 +165,8 @@ resource "aws_scheduler_schedule" "tile_tracker_lambda_scheduler" {
 # SNS topic
 resource "aws_sns_topic" "tile_tracker_notify_topic" {
   name = "tile-tracker-notify-topic-${var.env}"
-}
-
-# SNS topic policy
-resource "aws_sns_topic_policy" "tile_tracker_notify_topic_policy" {
-  arn = aws_sns_topic.tile_tracker_notify_topic.arn
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Sid     = "TileTrackerTopicPolicy"
-    Effect  = "Allow",
-    Principal = {
-      Service = "cloudwatch.amazonaws.com"
-      AWS     = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"
-    }
-    Action    = "SNS:Publish"
-  })
+  
+  // use default policy - only topic owner can publish/subscribe
 }
 
 # Subscribe an email to the SNS topic
@@ -227,10 +213,7 @@ resource "aws_cloudwatch_metric_alarm" "tile_tracker_high_invocation" {
 resource "aws_cloudwatch_composite_alarm" "tile_tracker_invocation_anomaly" {
   alarm_name        = "tile-tracker-alarm-invocation-anomaly-${var.env}"
   alarm_description = "Invocation rate anomaly for tile-tracker lambda in the last 1 hour."
-  alarm_rule        = <<-RULE
-    ALARM(${aws_cloudwatch_metric_alarm.tile_tracker_low_invocation.alarm_name}) OR 
-    ALARM(${aws_cloudwatch_metric_alarm.tile_tracker_high_invocation.alarm_name})
-  RULE
+  alarm_rule        = "ALARM(${aws_cloudwatch_metric_alarm.tile_tracker_low_invocation.alarm_name}) OR ALARM(${aws_cloudwatch_metric_alarm.tile_tracker_high_invocation.alarm_name})"
 
   actions_enabled     = true
   alarm_actions = [
